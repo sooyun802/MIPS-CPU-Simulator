@@ -2,6 +2,7 @@
 #include "sim/types.h"
 #include "asm/codegen.h"
 #include <iostream>
+#include <stdlib.h>
 using namespace std;
 void yyerror(const char*);
 extern int32_t yylineno;

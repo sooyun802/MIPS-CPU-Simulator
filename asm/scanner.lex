@@ -4,6 +4,7 @@
 %{ 
 #include "sim/types.h"
 #include <iostream>     
+#include <cstring>
 #include <stdlib.h>
 #include <limits.h>
 #include "rasm.tab.hpp"
