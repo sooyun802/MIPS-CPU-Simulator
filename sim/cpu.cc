@@ -7,15 +7,15 @@
 // understanding what is going on under the covers.
 static void print_stages(cpu_core *core)
 {
-	printf("0x%08x ", core->PC - 8);
-	printf("(if '%s', $%-2d {$%-2d $%-2d} %08x) "
+	printf("\033[93m0x%08x ", core->PC - 8);
+	printf("\033[92m(if '%s', $%-2d {$%-2d $%-2d} %08x) "
 	      , core->ifs.right.control()->name
 	      , core->ifs.right.Rdest
 	      , core->ifs.right.Rsrc1
 	      , core->ifs.right.Rsrc2
 	      , core->ifs.right.immediate);
 
-	printf("(id '%s' $%-2d {$%-2d $%-2d}={%08x, %08x} %08x) "
+	printf("\033[96m(id '%s' $%-2d {$%-2d $%-2d}={%08x, %08x} %08x) "
 	      , core->ids.left.control()->name
 	      , core->ids.right.Rdest
 	      , core->ids.right.Rsrc1
@@ -24,7 +24,7 @@ static void print_stages(cpu_core *core)
 	      , core->ids.right.Rsrc2Val
 	      , core->ids.right.immediate);
 
-	printf("(ex '%s' $%-2d <= $%-2d%c($%-2d or %08x)) "
+	printf("\033[92m(ex '%s' $%-2d <= $%-2d%c($%-2d or %08x)) "
 	      , core->exs.left.control()->name
 	      , core->exs.right.Rdest
 	      , core->exs.right.Rsrc1
@@ -34,41 +34,41 @@ static void print_stages(cpu_core *core)
 	      , core->exs.right.aluresult);
 
 	if (core->mys.left.control()->mem_read) {
-		printf(" (ms '%s'  read_mem: 0x%0X val: %08x) "
+		printf("\033[96m (ms '%s'  read_mem: 0x%0X val: %08x) "
 		      , core->mys.left.control()->name
 		      , core->mys.left.aluresult, core->mys.right.mem_data);
 	}
 	else if (core->mys.left.control()->mem_write) {
-		printf(" (ms '%s' write_mem: 0x%0X val: %08x) "
+		printf("\033[96m (ms '%s' write_mem: 0x%0X val: %08x) "
 		      , core->mys.left.control()->name
 		      , core->mys.left.aluresult, core->mys.right.mem_data);
 	}
 	else if (core->mys.left.control()->branch) {
-		printf(" (ms done) ");
+		printf("\033[96m (ms done) ");
 	}
 	else {
-		printf(" (ms '%s') ", core->mys.left.control()->name);
+		printf("\033[96m (ms '%s') ", core->mys.left.control()->name);
 	}
 
 	if (core->wbs.left.control()->register_write) {
 		if (core->wbs.left.control()->mem_to_register) {
-			printf(" (wb '%-s' $%-2d<=%08x)"
+			printf("\033[92m (wb '%-s' $%-2d<=%08x)"
 			      , core->wbs.left.control()->name
 			      , core->wbs.left.Rdest
 			      , core->wbs.left.mem_data);
 		}
 		else {
-			printf(" (wb '%-s' $%-2d<=%08x )"
+			printf("\033[92m (wb '%-s' $%-2d<=%08x )"
 			      , core->wbs.left.control()->name
 			      , core->wbs.left.Rdest
 			      , core->wbs.left.aluresult);
 		}
 	}
 	else {
-		printf(" (wb '%-s' nowriteback)", core->wbs.left.control()->name);
+		printf("\033[92m (wb '%-s' nowriteback)", core->wbs.left.control()->name);
 	}
 
-	printf("\n");
+	printf("\033[0m\n");
 }
 
 

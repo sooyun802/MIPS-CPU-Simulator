@@ -6,10 +6,10 @@
 
 // some constants that are memory-specific
 const uint32_t text_segment = 0x00400000;
-const uint32_t data_segment = 0x10000000;
-const uint32_t ktext_segment = 0x80000080;
-const uint32_t kdata_segment = 0x90000000;
-const uint32_t stack_segment = 0x80000000 - 0x1000;
+const uint32_t data_segment = 0x08000000;
+const uint32_t ktext_segment = 0x40000080;
+const uint32_t kdata_segment = 0x41000000;
+const uint32_t stack_segment = 0x40000000 - 0x1000;
 // ^ stack grows down, this is the bottom-most element (reserved space for catching errors)
 // mmap supports growing down, so all is well.
 
