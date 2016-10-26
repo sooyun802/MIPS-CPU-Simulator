@@ -14,12 +14,17 @@ typedef struct _instruction {
 	const bool register_write;
 
 	const byte alu_operation;  // an integer which determines which operation the ALU should perform
+                             // 0: do nothing, this operation does not require an ALU op (copy forward)
+                             // 1: do a signed add of reg1 to param
+                             // 2: do a signed subtract of param from reg1
 	const byte alu_source;     // second arg source
 	                           // 0: source from register.
 	                           // 1: source from immediate.
 	                           // 2: source from sum of immidate and register (addrcalc)
 
-	const bool branch;
+	const bool branch;         // whether it is branch operation or not
+                             // 1: branch
+                             // 0: not branch
 	const byte mem_write;
 	const byte mem_read;
 	const bool mem_to_register;

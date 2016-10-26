@@ -24,7 +24,11 @@ void InstructionFetchStage::Execute()
 	right.immediate = core->mem->get<uint32_t>(core->PC + 3);
 	core->PC += 8;
 	right.PC = core->PC;
+
+  // Branch prediction ----------------------------------------------------
+  // Very simple branch prediction (always false)
 	right.predict_taken = false;
+  // ----------------------------------------------------------------------
 }
 
 
@@ -45,9 +49,25 @@ void InstructionDecodeStage::Execute()
 
 void ExecuteStage::Execute()
 {
-	uint32_t param;
+  // Inputs ---------------------------------------------------------------
+  // Values transmitted from left
+  // * left.opcode
+  // * left.Rsrc1Val
+  // * left.Rsrc2Val
+  // * left.immediate
+  // * left.PC
+  // * left.predict_taken
 
-	switch (left.control()->alu_source) {
+  // Decoded instruction (decoded_inst)
+  const instruction* decoded_inst;
+  decoded_inst = left.control();
+
+  // Source value (svalue)
+	int32_t svalue = left.Rsrc1Val;
+
+  // Source parameter (sparam)
+  uint32_t param;
+	switch (decoded_inst->alu_source) {
 	case 0: // source from register
 		param = left.Rsrc2Val;
 		break;
@@ -60,28 +80,14 @@ void ExecuteStage::Execute()
 		param = left.immediate + *(uint32_t *)&left.Rsrc1Val;
 		break;
 	}
-	// for those operands which require signed arithmatic.
-	int32_t svalue = left.Rsrc1Val;
 	int32_t sparam = *(int32_t *)&param;
+  // ----------------------------------------------------------------------
+  
+  // Result (result)
 	int32_t result = sparam;
 
-	if (left.control()->branch) {
-		bool taken = (left.opcode == 2 && left.Rsrc1Val == 0) ||
-		             (left.opcode == 3 && left.Rsrc1Val >= left.Rsrc2Val) ||
-		             (left.opcode == 4 && left.Rsrc1Val != left.Rsrc2Val);
-		// if mispredict, nop out IF and ID. (mispredict == prediction and taken differ)
-		if (core->verbose) printf(taken ? "taken %d  %d\n" : "nottaken %d  %d\n", left.Rsrc1Val, left.Rsrc2Val);
-		if (left.predict_taken != taken) {
-			if (core->verbose) printf("\033[32m*** MISPREDICT!\033[0m\n");
-			core->ifs.make_nop();
-			core->ids.make_nop();
-		}
-		if (taken) {
-			core->PC = left.immediate; // load the target into the PC.
-		}
-	}
-
-	switch (left.control()->alu_operation) {
+  // Practice 1-a. ALU Execution ------------------------------------------
+	switch (decoded_inst->alu_operation) {
 	case 0:
 		// do nothing, this operation does not require an alu op (copy forward)
 		break;
@@ -96,15 +102,41 @@ void ExecuteStage::Execute()
 		result = svalue - sparam;
 		break;
 	}
+  // ----------------------------------------------------------------------
+
+  // Practice 1-b. Branch Execution ----------------------------------------
+  bool taken = 0;
+	if (decoded_inst->branch) {
+		bool taken = (left.opcode == 2 && left.Rsrc1Val == 0) ||
+		             (left.opcode == 3 && left.Rsrc1Val >= left.Rsrc2Val) ||
+		             (left.opcode == 4 && left.Rsrc1Val != left.Rsrc2Val);
+		// if mispredict, nop out IF and ID. (mispredict == prediction and taken differ)
+    if(taken == 1)
+      printf("taken: %d %d\n", left.Rsrc1Val, left.Rsrc2Val);
+    else
+      printf("not taken: %d %d\n", left.Rsrc1Val, left.Rsrc2Val);
+
+		if (left.predict_taken != taken) {
+			printf("*** MISPREDICT!\n");
+			core->ifs.make_nop();
+			core->ids.make_nop();
+		}
+		if (taken) {
+			core->PC = left.immediate; // load the target into the PC.
+		}
+	}
+  // ----------------------------------------------------------------------
+
 	right.aluresult = *(uint32_t *)&result;
 
-	// copy forward from previous latch
+	// Copy forward from previous latch -------------------------------------
 	right.opcode = left.opcode;
 	right.Rsrc1 = left.Rsrc1;
 	right.Rsrc2 = left.Rsrc2;
 	right.Rsrc1Val = left.Rsrc1Val;
 	right.Rsrc2Val = left.Rsrc2Val;
 	right.Rdest = left.Rdest;
+  // ----------------------------------------------------------------------
 }
 
 
@@ -184,15 +216,17 @@ void WriteBackStage::Shift()
 
 void InstructionDecodeStage::Resolve()
 {
-	// Check for a data stall. If found, back up the machine one cycle.
+	// Check for a data stall. If found, back up the machine one cycle. -----
 	if (core->ids.right.control()->mem_read &&
-	    (core->ids.right.Rdest == core->ifs.right.Rsrc1 || core->ids.right.Rdest == core->ifs.right.Rsrc2)) {
+	    (core->ids.right.Rdest == core->ifs.right.Rsrc1 || 
+       core->ids.right.Rdest == core->ifs.right.Rsrc2)) {
 		// Bubble the pipe!
 		// nop the two stalled instructions, back up the pc by 2 instructions
-		if (core->verbose) printf("\033[31m*** BUBBLE\033[0m\n");
+		printf("*** BUBBLE\n");
 		core->ifs.make_nop();
 		core->PC -= 8;
 	}
+  // ----------------------------------------------------------------------
 }
 
 
@@ -204,12 +238,12 @@ void ExecuteStage::Resolve()
 	if (core->exs.right.Rdest != 0 && core->exs.right.control()->register_write) {
 		if (core->exs.right.Rdest == core->ids.right.Rsrc1) {
 			core->ids.right.Rsrc1Val = core->exs.right.aluresult;
-			if (core->verbose) printf("\033[34m*** FORWARDex1\033[0m:  %08x going to ID/EX's Rsrc1Val \n",
+			printf("*** FORWARDex1:  %08x going to ID/EX's Rsrc1Val \n",
 				                       core->exs.right.aluresult);
 		}
 		if (core->exs.right.Rdest == core->ids.right.Rsrc2) {
 			core->ids.right.Rsrc2Val = core->exs.right.aluresult;
-			if (core->verbose) printf("\033[34m*** FORWARDex2\033[0m:  %08x going to ID/EX's Rsrc2Val \n",
+			printf("*** FORWARDex2:  %08x going to ID/EX's Rsrc2Val \n",
 				                       core->exs.right.aluresult);
 		}
 	}
@@ -226,15 +260,17 @@ void MemoryStage::Resolve()
 		    core->mys.right.Rdest == core->ids.right.Rsrc1) {
 			core->ids.right.Rsrc1Val =
 			   core->mys.right.control()->mem_read ? core->mys.right.mem_data : core->mys.right.aluresult;
-			if (core->verbose) printf("\033[34m*** FORWARDmem1\033[0m: %08x going to ID/EX's Rsrc1Val \n",
+			printf("*** FORWARDmem1: %08x going to ID/EX's Rsrc1Val \n",
 				                       core->ids.right.Rsrc1Val);
 		}
 		if (core->exs.right.Rdest != core->ids.right.Rsrc2 &&
 		    core->mys.right.Rdest == core->ids.right.Rsrc2) {
 			core->ids.right.Rsrc2Val =
 			   core->mys.right.control()->mem_read ? core->mys.right.mem_data : core->mys.right.aluresult;
-			if (core->verbose) printf("\033[34m*** FORWARDmem2\033[0m: %08x going to ID/EX's Rsrc2Val \n",
+			printf("*** FORWARDmem2: %08x going to ID/EX's Rsrc2Val \n",
 				                       core->ids.right.Rsrc2Val);
 		}
 	}
 }
+
+
