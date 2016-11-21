@@ -15,6 +15,7 @@ static void inline decode_ops(uint16_t input, byte *dest, byte *src1, byte *src2
    The execute implementations. These actually perform the action of the stage.
  **/
 
+// IF Stage ---------------------------------------------------------------
 // Instructions are fetched from memory in this stage, and passed into the CPU's ID latch
 void InstructionFetchStage::Execute()
 {
@@ -32,6 +33,7 @@ void InstructionFetchStage::Execute()
 }
 
 
+// ID Stage ---------------------------------------------------------------
 void InstructionDecodeStage::Execute()
 {
 	core->registers[0] = 0; // wire register 0 to zero for all register reads
@@ -47,6 +49,7 @@ void InstructionDecodeStage::Execute()
 }
 
 
+// EXE Stage --------------------------------------------------------------
 void ExecuteStage::Execute()
 {
   // Inputs ---------------------------------------------------------------
@@ -139,6 +142,7 @@ void ExecuteStage::Execute()
   // ----------------------------------------------------------------------
 }
 
+// MEM Stage --------------------------------------------------------------
 
 void MemoryStage::Execute()
 {
@@ -169,6 +173,7 @@ void MemoryStage::Execute()
 }
 
 
+// WB Stage ---------------------------------------------------------------
 void WriteBackStage::Execute()
 {
 	const instruction *control = left.control();
