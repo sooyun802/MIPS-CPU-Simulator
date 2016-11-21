@@ -73,7 +73,7 @@ static void print_stages(cpu_core *core)
 
 
 // Actual execution of whatever is in the CPU will occur here.
-void run_cpu(memory *mem, const bool verbose_cpu)
+void run_cpu(memory *mem, const bool verbose_cpu, int type_branch_predictor, int num_bht_entries)
 {
 	cpu_core core;
 
@@ -81,6 +81,9 @@ void run_cpu(memory *mem, const bool verbose_cpu)
 	core.usermode = true;
 	core.mem = mem;
 	core.verbose = verbose_cpu;
+
+  core.type_branch_predictor = type_branch_predictor;
+  core.num_bht_entries = num_bht_entries;
 
 	// initialize registers
 	for (int32_t x = 0; x < 32; x++) core.registers[x] = 0;

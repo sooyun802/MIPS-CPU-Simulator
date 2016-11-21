@@ -10,6 +10,12 @@ static void inline decode_ops(uint16_t input, byte *dest, byte *src1, byte *src2
 	*src2 = (input & 0x7C00) >> 10;
 }
 
+static void inline jump_to(uint32_t* pc, uint32_t immediate) {
+  if(immediate < 0x00400000)
+    *pc = 0x00400000 + immediate; // load the target into the PC.
+  else
+    *pc = immediate;
+}
 
 /**
    The execute implementations. These actually perform the action of the stage.
@@ -19,6 +25,11 @@ static void inline decode_ops(uint16_t input, byte *dest, byte *src1, byte *src2
 // Instructions are fetched from memory in this stage, and passed into the CPU's ID latch
 void InstructionFetchStage::Execute()
 {
+  // Input of the program
+  int type_branch_predictor = core->type_branch_predictor; // Type of branch predictor (1: 1-bit, 2: 2-bit)
+  int num_bht_entries = core->num_bht_entries; // 
+  //---------------------
+  
 	right.opcode = core->mem->get<byte>(core->PC);
 	uint16_t operands = core->mem->get<uint16_t>(core->PC + 1);
 	decode_ops(operands, &right.Rdest, &right.Rsrc1, &right.Rsrc2);
@@ -27,7 +38,7 @@ void InstructionFetchStage::Execute()
 	right.PC = core->PC;
 
   // Branch prediction ----------------------------------------------------
-  // Very simple branch prediction (always false)
+  // Static branch prediction (Always Not Taken)
 	right.predict_taken = false;
   // ----------------------------------------------------------------------
 }
@@ -89,7 +100,7 @@ void ExecuteStage::Execute()
   // Result (result)
 	int32_t result = sparam;
 
-  // Practice 1-a. ALU Execution ------------------------------------------
+  // ALU Execution --------------------------------------------------------
 	switch (decoded_inst->alu_operation) {
 	case 0:
 		// do nothing, this operation does not require an alu op (copy forward)
@@ -107,7 +118,7 @@ void ExecuteStage::Execute()
 	}
   // ----------------------------------------------------------------------
 
-  // Practice 1-b. Branch Execution ----------------------------------------
+  // Branch Execution -----------------------------------------------------
   bool taken = 0;
 	if (decoded_inst->branch) {
 		bool taken = (left.opcode == 2 && left.Rsrc1Val == 0) ||
@@ -125,7 +136,7 @@ void ExecuteStage::Execute()
 			core->ids.make_nop();
 		}
 		if (taken) {
-			core->PC = left.immediate; // load the target into the PC.
+      jump_to(&core->PC, left.immediate);
 		}
 	}
   // ----------------------------------------------------------------------
@@ -277,5 +288,3 @@ void MemoryStage::Resolve()
 		}
 	}
 }
-
-

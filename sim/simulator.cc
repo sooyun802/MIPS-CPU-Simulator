@@ -18,10 +18,11 @@ using namespace std;
 static void usage(char *name)
 {
 	cout << name << " usage:\n" <<
+          "\t-b type_of_branch_predictor: 1-bit predictor(1) or 2-bit predictor(2)\n" <<
+          "\t-e the_number_of_bht_entries: the number of branch history table entries\n" <<
 	        "\t-t text_stream_file: load .text with the contents of file\n" <<
 	        "\t-d data_stream_file: [optional] load .data with contents of file\n" <<
-	        "\t-v: very verbose single-click CPU (echo every stage, pause after each cycle)\n" <<
-	        "\t-m: collect and display memory statistics\n\t\t(position relative to -t and -d is important)\n";
+	        "\t-v: very verbose single-click CPU (echo every stage, pause after each cycle)\n";
 }
 
 
@@ -38,8 +39,36 @@ int32_t main(int32_t argc, char **argv)
 	uint32_t text_ptr = text_segment;
 	uint32_t data_ptr = data_segment;
 
-	while ((ch = getopt(argc, argv, "t:d:vmc")) != -1) {
+  int type_branch_predictor = 0;
+  int num_bht_entries = 0;
+
+	while ((ch = getopt(argc, argv, "t:d:b:e:vmc")) != -1) {
 		switch (ch) {
+    case 'b': 
+      {
+        sscanf(optarg, "%d", &type_branch_predictor);
+        if(type_branch_predictor != 1 && type_branch_predictor != 2) {
+          cout << "Wrong type of branch predictor! (" << optarg << ")\n";
+          exit(20);
+        }
+      }
+      break;
+    case 'e': 
+      {
+        int valid_bht_entries[] = {8, 16, 32, 64, 128, 256, 512, 1024};
+        int invalid = 1;
+        sscanf(optarg, "%d", &num_bht_entries);
+        for(int i=0; i<sizeof(valid_bht_entries); i++) {
+          if(valid_bht_entries[i] == num_bht_entries) {
+            invalid = 0;
+          }
+        }
+        if(invalid == 1) {
+          cout << "Wrong number of branch predictor entries! (" << optarg << ")\n";
+          exit(20);
+        }
+      }
+      break;
 		case 't': {
 			ifstream input(optarg, ios::binary);
 			if (!(input.good() && input.is_open())) {
@@ -95,8 +124,12 @@ int32_t main(int32_t argc, char **argv)
 		usage(*argv);
 		exit(10);
 	}
+
+  cout <<"Type of branch predictor: " << type_branch_predictor << "-bit predictor\n";
+  cout << "The number of BHT entries: " << num_bht_entries << " entries\n";
+
 	cout << *argv << ": Starting CPU..." << endl;
-	run_cpu(&mem, verb);
+	run_cpu(&mem, verb, type_branch_predictor, num_bht_entries);
 	cout << *argv << ": CPU Finished" << endl;
 
 	if (mem.is_collecting()) mem.display_memory_stats();

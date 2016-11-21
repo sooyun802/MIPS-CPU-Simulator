@@ -44,9 +44,9 @@ static void replaceExtension(char *name, const char *newext)
 static void usage(char *name)
 {
 	cout << name << " usage:\n" <<
-	     "\t-f source_file: read ascii assembly code from file\n" <<
-	     "\t-t text_stream_file: [optional] output .text to specified file\n" <<
-	     "\t-d data_stream_file: [optional] output .data to specified file\n";
+	     "\t-f source_file: read ascii assembly code from file\n";
+//	     "\t-t text_stream_file: [optional] output .text to specified file\n" <<
+//	     "\t-d data_stream_file: [optional] output .data to specified file\n";
 }
 
 

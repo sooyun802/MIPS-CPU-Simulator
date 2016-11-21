@@ -19,8 +19,11 @@ public:
 	ExecuteStage   exs;
 	MemoryStage    mys;
 	WriteBackStage wbs;
+
+  int type_branch_predictor;
+  int num_bht_entries;
 };
 
-void run_cpu(memory *m, const bool verbose);
+void run_cpu(memory *m, const bool verbose, int type_branch_predictor, int num_bht_entries);
 
 #endif /* _CPU_H_ */
