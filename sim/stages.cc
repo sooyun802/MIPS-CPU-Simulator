@@ -137,9 +137,9 @@ void ExecuteStage::Execute()
 		             (left.opcode == 4 && left.Rsrc1Val != left.Rsrc2Val);
 		// if mispredict, nop out IF and ID. (mispredict == prediction and taken differ)
     if(taken == 1)
-      printf("taken: %d %d\n", left.Rsrc1Val, left.Rsrc2Val);
+      printf("*** Branch taken: %d %d\n", left.Rsrc1Val, left.Rsrc2Val);
     else
-      printf("not taken: %d %d\n", left.Rsrc1Val, left.Rsrc2Val);
+      printf("*** Branch not taken: %d %d\n", left.Rsrc1Val, left.Rsrc2Val);
 
 		if (left.predict_taken != taken) {
 			printf("*** MISPREDICT!\n");
@@ -249,7 +249,9 @@ void InstructionDecodeStage::Resolve()
        core->ids.right.Rdest == core->ifs.right.Rsrc2)) {
 		// Bubble the pipe!
 		// nop the two stalled instructions, back up the pc by 2 instructions
-		printf("*** BUBBLE\n");
+    if(core->verbose) {
+      printf("*** BUBBLE\n");
+    }
 		core->ifs.make_nop();
 		core->PC -= 8;
 	}
@@ -265,13 +267,17 @@ void ExecuteStage::Resolve()
 	if (core->exs.right.Rdest != 0 && core->exs.right.control()->register_write) {
 		if (core->exs.right.Rdest == core->ids.right.Rsrc1) {
 			core->ids.right.Rsrc1Val = core->exs.right.aluresult;
-			printf("*** FORWARDex1:  %08x going to ID/EX's Rsrc1Val \n",
-				                       core->exs.right.aluresult);
+      if(core->verbose) {
+        printf("*** FORWARDex1:  %08x going to ID/EX's Rsrc1Val \n",
+            core->exs.right.aluresult);
+      }
 		}
 		if (core->exs.right.Rdest == core->ids.right.Rsrc2) {
 			core->ids.right.Rsrc2Val = core->exs.right.aluresult;
-			printf("*** FORWARDex2:  %08x going to ID/EX's Rsrc2Val \n",
-				                       core->exs.right.aluresult);
+      if(core->verbose) {
+        printf("*** FORWARDex2:  %08x going to ID/EX's Rsrc2Val \n",
+            core->exs.right.aluresult);
+      }
 		}
 	}
 }
@@ -281,21 +287,25 @@ void MemoryStage::Resolve()
 {
 	// If the next to previous instruction (IDS) is attempting a READ of the same register the instruction
 	// in this stage is supposed to WRITE, then here, update the next-to-previous stage's right latch
-	// with the value coming out of the this stage. (also, the read is not on zero)
-	if (core->mys.right.Rdest != 0 && core->mys.right.control()->register_write) {
-		if (core->exs.right.Rdest != core->ids.right.Rsrc1 &&
-		    core->mys.right.Rdest == core->ids.right.Rsrc1) {
-			core->ids.right.Rsrc1Val =
-			   core->mys.right.control()->mem_read ? core->mys.right.mem_data : core->mys.right.aluresult;
-			printf("*** FORWARDmem1: %08x going to ID/EX's Rsrc1Val \n",
-				                       core->ids.right.Rsrc1Val);
-		}
-		if (core->exs.right.Rdest != core->ids.right.Rsrc2 &&
-		    core->mys.right.Rdest == core->ids.right.Rsrc2) {
-			core->ids.right.Rsrc2Val =
-			   core->mys.right.control()->mem_read ? core->mys.right.mem_data : core->mys.right.aluresult;
-			printf("*** FORWARDmem2: %08x going to ID/EX's Rsrc2Val \n",
-				                       core->ids.right.Rsrc2Val);
-		}
-	}
+  // with the value coming out of the this stage. (also, the read is not on zero)
+  if (core->mys.right.Rdest != 0 && core->mys.right.control()->register_write) {
+    if (core->exs.right.Rdest != core->ids.right.Rsrc1 &&
+        core->mys.right.Rdest == core->ids.right.Rsrc1) {
+      core->ids.right.Rsrc1Val =
+        core->mys.right.control()->mem_read ? core->mys.right.mem_data : core->mys.right.aluresult;
+      if(core->verbose) {
+        printf("*** FORWARDmem1: %08x going to ID/EX's Rsrc1Val \n",
+            core->ids.right.Rsrc1Val);
+      }
+    }
+    if (core->exs.right.Rdest != core->ids.right.Rsrc2 &&
+        core->mys.right.Rdest == core->ids.right.Rsrc2) {
+      core->ids.right.Rsrc2Val =
+        core->mys.right.control()->mem_read ? core->mys.right.mem_data : core->mys.right.aluresult;
+      if(core->verbose) {
+        printf("*** FORWARDmem2: %08x going to ID/EX's Rsrc2Val \n",
+            core->ids.right.Rsrc2Val);
+      }
+    }
+  }
 }
