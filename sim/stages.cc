@@ -136,31 +136,36 @@ void ExecuteStage::Execute()
 		             (left.opcode == 3 && left.Rsrc1Val >= left.Rsrc2Val) ||
 		             (left.opcode == 4 && left.Rsrc1Val != left.Rsrc2Val);
 		// if mispredict, nop out IF and ID. (mispredict == prediction and taken differ)
-    if(taken == 1)
-      printf("*** Branch taken: %d %d\n", left.Rsrc1Val, left.Rsrc2Val);
-    else
-      printf("*** Branch not taken: %d %d\n", left.Rsrc1Val, left.Rsrc2Val);
+    if(core->verbose) {
+      if(taken == 1) {
+        printf("*** Branch taken: %d %d\n", left.Rsrc1Val, left.Rsrc2Val);
+      } else {
+        printf("*** Branch not taken: %d %d\n", left.Rsrc1Val, left.Rsrc2Val);
+      }
+    }
 
-		if (left.predict_taken != taken) {
-			printf("*** MISPREDICT!\n");
-			core->ifs.make_nop();
-			core->ids.make_nop();
-		}
-		if (taken) {
+    if (left.predict_taken != taken) {
+      if(core->verbose) {
+        printf("*** MISPREDICT!\n");
+      }
+      core->ifs.make_nop();
+      core->ids.make_nop();
+    }
+    if (taken) {
       jump_to(&core->PC, left.immediate);
-		}
-	}
+    }
+  }
   // ----------------------------------------------------------------------
 
-	right.aluresult = *(uint32_t *)&result;
+  right.aluresult = *(uint32_t *)&result;
 
-	// Copy forward from previous latch -------------------------------------
-	right.opcode = left.opcode;
-	right.Rsrc1 = left.Rsrc1;
-	right.Rsrc2 = left.Rsrc2;
-	right.Rsrc1Val = left.Rsrc1Val;
-	right.Rsrc2Val = left.Rsrc2Val;
-	right.Rdest = left.Rdest;
+  // Copy forward from previous latch -------------------------------------
+  right.opcode = left.opcode;
+  right.Rsrc1 = left.Rsrc1;
+  right.Rsrc2 = left.Rsrc2;
+  right.Rsrc1Val = left.Rsrc1Val;
+  right.Rsrc2Val = left.Rsrc2Val;
+  right.Rdest = left.Rdest;
   // ----------------------------------------------------------------------
 }
 
