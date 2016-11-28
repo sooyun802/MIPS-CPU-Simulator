@@ -148,10 +148,10 @@ void ExecuteStage::Execute()
       if(core->verbose) {
         printf("*** MISPREDICT!\n");
       }
-      core->ifs.make_nop();
-      core->ids.make_nop();
     }
     if (taken) {
+      core->ifs.make_nop();
+      core->ids.make_nop();
       jump_to(&core->PC, left.immediate);
     }
   }
