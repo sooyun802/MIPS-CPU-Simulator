@@ -11,6 +11,9 @@ extern int32_t optind;
 extern int32_t optopt;
 extern int32_t opterr;
 extern int32_t optreset;
+extern int *BHT;
+extern int num_branches;
+extern int num_mispredictions;
 
 using namespace std;
 
@@ -58,6 +61,10 @@ int32_t main(int32_t argc, char **argv)
         int valid_bht_entries[] = {8, 16, 32, 64, 128, 256, 512, 1024};
         int invalid = 1;
         sscanf(optarg, "%d", &num_bht_entries);
+        BHT=(int *)malloc(sizeof(int)*num_bht_entries);
+        for(int i=0;i<num_bht_entries;i++) {
+          BHT[i]=0;
+        }
         for(int i=0; i<sizeof(valid_bht_entries); i++) {
           if(valid_bht_entries[i] == num_bht_entries) {
             invalid = 0;
@@ -129,7 +136,11 @@ int32_t main(int32_t argc, char **argv)
   cout << "The number of BHT entries: " << num_bht_entries << " entries\n";
 
 	cout << *argv << ": Starting CPU..." << endl;
+	num_branches=0;
+	num_mispredictions=0;
 	run_cpu(&mem, verb, type_branch_predictor, num_bht_entries);
+	free(BHT);
+	cout << "Misprediction ratio: " << (float)num_mispredictions/num_branches << endl;
 	cout << *argv << ": CPU Finished" << endl;
 
 	if (mem.is_collecting()) mem.display_memory_stats();

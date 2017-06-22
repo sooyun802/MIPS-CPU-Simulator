@@ -1,7 +1,12 @@
 #include "cpu.h"
 #include "stages.h"
+#include "instruction.h"
 
 #include <stdio.h>
+
+int num_branches;
+int num_mispredictions;
+int *BHT;
 // the three operands are encoded inside a single uint16_t. This method cracks them open
 static void inline decode_ops(uint16_t input, byte *dest, byte *src1, byte *src2)
 {
@@ -39,7 +44,31 @@ void InstructionFetchStage::Execute()
 
   // Branch prediction ----------------------------------------------------
   // Static branch prediction (Always Not Taken)
-	right.predict_taken = false;
+	//right.predict_taken = false;
+	if(right.opcode>=2 && right.opcode<=4) {
+		if(type_branch_predictor==1) {
+			switch(BHT[(right.PC>>2)%num_bht_entries]) {
+				case 0:
+					right.predict_taken=false;
+					break;
+				case 1:
+					right.predict_taken=true;
+					break;
+			}
+		}
+		else if(type_branch_predictor==2) {
+			switch(BHT[(right.PC>>2)%num_bht_entries]) {
+				case 0:
+				case 1:
+					right.predict_taken=false;
+					break;
+				case 2:
+				case 3:
+					right.predict_taken=true;
+					break;
+			}
+		}
+	}
   // ----------------------------------------------------------------------
 }
 
@@ -132,6 +161,7 @@ void ExecuteStage::Execute()
   // Branch Execution -----------------------------------------------------
   bool taken = 0;
 	if (decoded_inst->branch) {
+		num_branches++;
 		bool taken = (left.opcode == 2 && left.Rsrc1Val == 0) ||
 		             (left.opcode == 3 && left.Rsrc1Val >= left.Rsrc2Val) ||
 		             (left.opcode == 4 && left.Rsrc1Val != left.Rsrc2Val);
@@ -145,14 +175,32 @@ void ExecuteStage::Execute()
     }
 
     if (left.predict_taken != taken) {
-      if(core->verbose) {
+      if(core->verbose) {    
         printf("*** MISPREDICT!\n");
       }
     }
     if (taken) {
       core->ifs.make_nop();
       core->ids.make_nop();
+      if(type_branch_predictor==1) {
+      	if(BHT[(left.PC>>2)%num_bht_entries]==0) num_mispredictions++;
+      	BHT[(left.PC>>2)%num_bht_entries]=1;
+      }
+      else if(type_branch_predictor==2) {
+      	if(BHT[(left.PC>>2)%num_bht_entries]<=1) num_mispredictions++;
+      	if(BHT[(left.PC>>2)%num_bht_entries]<3) BHT[(left.PC>>2)%num_bht_entries]+=1;
+      }
       jump_to(&core->PC, left.immediate);
+    }
+    else {
+    	 if(type_branch_predictor==1) {
+    	 	if(BHT[(left.PC>>2)%num_bht_entries]==1) num_mispredictions++;
+    	 	BHT[(left.PC>>2)%num_bht_entries]=0;
+    	 }
+    	 else if(type_branch_predictor==2) {
+    	 	if(BHT[(left.PC>>2)%num_bht_entries]>=2) num_mispredictions++;
+    	 	if(BHT[(left.PC>>2)%num_bht_entries]>0) BHT[(left.PC>>2)%num_bht_entries]-=1;
+    	 }
     }
   }
   // ----------------------------------------------------------------------
